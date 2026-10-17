@@ -24,6 +24,8 @@ const gradeSchema = z.object({
   note: z.string().trim().max(500, "Observația poate avea maximum 500 de caractere."),
 });
 
+const subjectIdSchema = z.string().uuid("Materia selectată nu este validă.");
+
 const defaultSubjects = [
   { name: "Limba și literatura română", icon: "Languages", color_token: "rose" },
   { name: "Matematică", icon: "Sigma", color_token: "blue" },
@@ -110,6 +112,27 @@ export async function addDefaultSubjects(): Promise<CatalogActionResult> {
 
   revalidatePath("/catalog");
   return { ok: true, message: `${missing.length} materii au fost adăugate.` };
+}
+
+export async function deleteSubject(subjectId: string): Promise<CatalogActionResult> {
+  const parsed = subjectIdSchema.safeParse(subjectId);
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Materia nu este validă." };
+
+  const { supabase, user } = await authenticatedContext();
+  if (!user) return { ok: false, message: "Sesiunea a expirat. Intră din nou în cont." };
+
+  const { data, error } = await supabase
+    .from("subjects")
+    .delete()
+    .eq("id", parsed.data)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) return { ok: false, message: "Materia nu a putut fi ștearsă." };
+
+  revalidatePath("/catalog");
+  return { ok: true, message: "Materia a fost ștearsă." };
 }
 
 export async function saveGrade(formData: FormData): Promise<CatalogActionResult> {

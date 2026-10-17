@@ -18,6 +18,8 @@ import {
   Plus,
   Sigma,
   Sparkles,
+  Trash2,
+  TriangleAlert,
   UsersRound,
   X,
 } from "lucide-react";
@@ -31,7 +33,7 @@ import {
   formatAverage,
   type AverageSummary,
 } from "@/features/grades/calculations";
-import { addDefaultSubjects, createSubject, saveGrade } from "@/server/actions/catalog";
+import { addDefaultSubjects, createSubject, deleteSubject, saveGrade } from "@/server/actions/catalog";
 
 type Period = keyof AverageSummary;
 
@@ -87,6 +89,7 @@ export function CatalogClient({ subjects }: { subjects: Subject[] }) {
   const [period, setPeriod] = useState<Period>("year");
   const [gradeEditor, setGradeEditor] = useState<{ subjectId: string; grade?: Grade } | null>(null);
   const [showSubjectEditor, setShowSubjectEditor] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<SubjectView | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -108,6 +111,7 @@ export function CatalogClient({ subjects }: { subjects: Subject[] }) {
     setToast(message);
     setGradeEditor(null);
     setShowSubjectEditor(false);
+    setDeleteTarget(null);
     router.refresh();
   }
 
@@ -209,6 +213,7 @@ export function CatalogClient({ subjects }: { subjects: Subject[] }) {
                 delay={index * 45}
                 onAdd={() => setGradeEditor({ subjectId: subject.id })}
                 onEdit={(grade) => setGradeEditor({ subjectId: subject.id, grade })}
+                onDelete={() => setDeleteTarget(subject)}
               />
             ))}
           </section>
@@ -230,6 +235,14 @@ export function CatalogClient({ subjects }: { subjects: Subject[] }) {
         <SubjectEditor onClose={() => setShowSubjectEditor(false)} onSuccess={completeAction} />
       ) : null}
 
+      {deleteTarget ? (
+        <DeleteSubjectDialog
+          subject={deleteTarget}
+          onClose={() => setDeleteTarget(null)}
+          onSuccess={completeAction}
+        />
+      ) : null}
+
       {toast ? (
         <div className="toast" role="status">
           <Check size={17} /> {toast}
@@ -245,12 +258,14 @@ function SubjectCard({
   delay,
   onAdd,
   onEdit,
+  onDelete,
 }: {
   subject: SubjectView;
   period: Period;
   delay: number;
   onAdd: () => void;
   onEdit: (grade: Grade) => void;
+  onDelete: () => void;
 }) {
   const Icon = subjectIcons[subject.icon as keyof typeof subjectIcons] ?? BookOpen;
   const visibleGrades = subject.grades
@@ -262,9 +277,14 @@ function SubjectCard({
     <article className={`subject-card subject-${subject.color_token}`} style={{ animationDelay: `${delay}ms` }}>
       <div className="subject-card-top">
         <span className="subject-icon"><Icon size={21} /></span>
-        <button className="mini-add" type="button" onClick={onAdd} aria-label={`Adaugă notă la ${subject.name}`}>
-          <Plus size={18} />
-        </button>
+        <div className="subject-card-actions">
+          <button className="mini-action" type="button" onClick={onAdd} aria-label={`Adaugă notă la ${subject.name}`}>
+            <Plus size={18} />
+          </button>
+          <button className="mini-action mini-action-danger" type="button" onClick={onDelete} aria-label={`Șterge materia ${subject.name}`}>
+            <Trash2 size={17} />
+          </button>
+        </div>
       </div>
       <div className="subject-title-row">
         <div>
@@ -299,6 +319,59 @@ function SubjectCard({
         </button>
       )}
     </article>
+  );
+}
+
+function DeleteSubjectDialog({
+  subject,
+  onClose,
+  onSuccess,
+}: {
+  subject: SubjectView;
+  onClose: () => void;
+  onSuccess: (message: string) => void;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape" && !pending) onClose();
+    }
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [onClose, pending]);
+
+  function removeSubject() {
+    setError(null);
+    startTransition(async () => {
+      const result = await deleteSubject(subject.id);
+      if (result.ok) onSuccess(result.message);
+      else setError(result.message);
+    });
+  }
+
+  const gradeLabel = subject.grades.length === 1 ? "1 notă" : `${subject.grades.length} note`;
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !pending && onClose()}>
+      <section className="sheet sheet-compact delete-sheet" role="alertdialog" aria-modal="true" aria-labelledby="delete-subject-title" aria-describedby="delete-subject-description">
+        <div className="sheet-handle" aria-hidden="true" />
+        <span className="delete-icon" aria-hidden="true"><TriangleAlert size={25} /></span>
+        <h2 id="delete-subject-title">Ștergi „{subject.name}”?</h2>
+        <p id="delete-subject-description">
+          Se vor șterge definitiv {gradeLabel} și tot conținutul de învățare legat de această materie.
+          Temele vor rămâne salvate, dar fără materie asociată.
+        </p>
+        {error ? <p className="form-alert form-alert-error" role="alert">{error}</p> : null}
+        <div className="delete-actions">
+          <button className="secondary-button" type="button" onClick={onClose} disabled={pending}>Anulează</button>
+          <button className="danger-button" type="button" onClick={removeSubject} disabled={pending}>
+            <Trash2 size={17} /> {pending ? "Se șterge…" : "Șterge materia"}
+          </button>
+        </div>
+      </section>
+    </div>
   );
 }
 

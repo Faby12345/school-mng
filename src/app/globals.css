@@ -37,7 +37,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -802,9 +804,9 @@ a {
 }
 
 .subject-icon,
-.mini-add {
-  width: 2.65rem;
-  height: 2.65rem;
+.mini-action {
+  width: 2.75rem;
+  height: 2.75rem;
   display: grid;
   place-items: center;
   border: 0;
@@ -816,14 +818,36 @@ a {
   background: var(--subject-soft);
 }
 
-.mini-add {
+.subject-card-actions {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.mini-action {
   color: var(--muted);
   background: color-mix(in srgb, var(--background) 78%, transparent);
   cursor: pointer;
+  transition: color 150ms ease, background 150ms ease, transform 150ms ease;
+}
+
+.mini-action:hover,
+.mini-action:active {
+  color: var(--accent-deep);
+  transform: scale(0.96);
+}
+
+.mini-action-danger:hover,
+.mini-action-danger:active {
+  color: var(--danger);
+  background: var(--danger-soft);
 }
 
 .subject-title-row {
   margin-top: 1rem;
+}
+
+.subject-title-row > div {
+  min-width: 0;
 }
 
 .subject-title-row h3 {
@@ -1084,8 +1108,8 @@ a {
 }
 
 .sheet-close {
-  width: 2.65rem;
-  height: 2.65rem;
+  width: 2.75rem;
+  height: 2.75rem;
   display: grid;
   place-items: center;
   border: 0;
@@ -1112,6 +1136,7 @@ a {
   outline: none;
   color: var(--foreground);
   background: var(--surface-solid);
+  font-size: 1rem;
 }
 
 .sheet-form textarea {
@@ -1215,6 +1240,63 @@ a {
   width: 100%;
   min-height: 3.35rem;
   margin-top: 0.25rem;
+}
+
+.delete-sheet {
+  padding: 1.35rem;
+  overflow: visible;
+  text-align: center;
+}
+
+.delete-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0.35rem auto 1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 1rem;
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+
+.delete-sheet h2 {
+  margin: 0;
+  font-size: 1.55rem;
+  letter-spacing: -0.035em;
+  overflow-wrap: anywhere;
+}
+
+.delete-sheet > p:not(.form-alert) {
+  margin: 0.8rem auto 1.3rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.delete-actions {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.danger-button {
+  min-height: 2.85rem;
+  padding: 0 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 0.9rem;
+  color: white;
+  background: var(--danger);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.danger-button:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .toast {
@@ -1418,6 +1500,25 @@ a {
   }
 
   .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 380px) {
+  .average-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .period-switch {
+    width: 100%;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .period-switch button {
+    min-height: 2.75rem;
+  }
+
+  .delete-actions {
     grid-template-columns: 1fr;
   }
 }
