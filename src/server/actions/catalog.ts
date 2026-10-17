@@ -18,13 +18,13 @@ const gradeSchema = z.object({
   gradeId: z.union([z.literal(""), z.string().uuid()]).optional(),
   subjectId: z.string().uuid("Materia selectată nu este validă."),
   value: z.coerce.number().int().min(1, "Nota minimă este 1.").max(10, "Nota maximă este 10."),
-  semester: z.coerce.number().int().min(1).max(2),
   assessmentType: z.string().trim().min(2, "Alege tipul evaluării.").max(50),
   gradedOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data nu este validă."),
   note: z.string().trim().max(500, "Observația poate avea maximum 500 de caractere."),
 });
 
 const subjectIdSchema = z.string().uuid("Materia selectată nu este validă.");
+const gradeIdSchema = z.string().uuid("Nota selectată nu este validă.");
 
 const defaultSubjects = [
   { name: "Limba și literatura română", icon: "Languages", color_token: "rose" },
@@ -135,12 +135,32 @@ export async function deleteSubject(subjectId: string): Promise<CatalogActionRes
   return { ok: true, message: "Materia a fost ștearsă." };
 }
 
+export async function deleteGrade(gradeId: string): Promise<CatalogActionResult> {
+  const parsed = gradeIdSchema.safeParse(gradeId);
+  if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Nota nu este validă." };
+
+  const { supabase, user } = await authenticatedContext();
+  if (!user) return { ok: false, message: "Sesiunea a expirat. Intră din nou în cont." };
+
+  const { data, error } = await supabase
+    .from("grades")
+    .delete()
+    .eq("id", parsed.data)
+    .eq("user_id", user.id)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) return { ok: false, message: "Nota nu a putut fi ștearsă." };
+
+  revalidatePath("/catalog");
+  return { ok: true, message: "Nota a fost ștearsă." };
+}
+
 export async function saveGrade(formData: FormData): Promise<CatalogActionResult> {
   const parsed = gradeSchema.safeParse({
     gradeId: formData.get("gradeId") ?? "",
     subjectId: formData.get("subjectId"),
     value: formData.get("value"),
-    semester: formData.get("semester"),
     assessmentType: formData.get("assessmentType"),
     gradedOn: formData.get("gradedOn"),
     note: formData.get("note") ?? "",
@@ -165,7 +185,6 @@ export async function saveGrade(formData: FormData): Promise<CatalogActionResult
   const grade = {
     subject_id: parsed.data.subjectId,
     value: parsed.data.value,
-    semester: parsed.data.semester,
     assessment_type: parsed.data.assessmentType,
     graded_on: parsed.data.gradedOn,
     note: parsed.data.note || null,

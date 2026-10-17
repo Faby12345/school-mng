@@ -673,7 +673,7 @@ a {
   margin-top: 2rem;
   padding: 1.15rem;
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto;
   align-items: center;
   gap: 1.5rem;
   border: 1px solid rgba(57, 120, 246, 0.15);
@@ -728,37 +728,6 @@ a {
 .overview-meta strong {
   color: var(--foreground);
   font-size: 1.05rem;
-}
-
-.period-switch,
-.semester-picker {
-  display: grid;
-  grid-auto-flow: column;
-  gap: 0.2rem;
-  padding: 0.25rem;
-  border-radius: 0.85rem;
-  background: color-mix(in srgb, var(--background) 80%, transparent);
-}
-
-.period-switch button,
-.semester-picker button {
-  min-width: 3rem;
-  min-height: 2.4rem;
-  padding: 0 0.7rem;
-  border: 0;
-  border-radius: 0.65rem;
-  color: var(--muted);
-  background: transparent;
-  font-size: 0.8rem;
-  font-weight: 720;
-  cursor: pointer;
-}
-
-.period-switch button.is-selected,
-.semester-picker button.is-selected {
-  color: var(--accent-deep);
-  background: var(--surface-solid);
-  box-shadow: 0 3px 12px rgba(30, 51, 84, 0.09);
 }
 
 .catalog-section-heading {
@@ -901,83 +870,61 @@ a {
 .tone-empty { color: var(--muted); background: color-mix(in srgb, var(--background) 75%, transparent); }
 .average-orb.tone-empty { color: var(--muted); background: var(--background); }
 
-.average-strip {
-  margin: 1rem 0;
-  padding: 0.7rem 0;
+.grade-collection {
+  margin-top: 1rem;
+}
+
+.grade-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  border-block: 1px solid var(--border);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.45rem;
 }
 
-.average-strip div {
-  display: grid;
-  gap: 0.15rem;
-  text-align: center;
-}
-
-.average-strip div + div {
-  border-left: 1px solid var(--border);
-}
-
-.average-strip dt {
-  color: var(--muted);
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-.average-strip dd {
-  margin: 0;
-  font-size: 0.85rem;
-  font-weight: 760;
-}
-
-.grade-list {
-  display: grid;
-  gap: 0.4rem;
-  max-height: 13rem;
-  overflow-y: auto;
-  scrollbar-width: thin;
-}
-
-.grade-row {
-  width: 100%;
-  min-height: 3.15rem;
-  padding: 0.35rem 0.45rem;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+.grade-tile {
+  min-width: 0;
+  min-height: 5.15rem;
+  padding: 0.45rem 0.25rem;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
-  border: 0;
-  border-radius: 0.8rem;
+  justify-content: center;
+  gap: 0.18rem;
+  border: 1px solid var(--border);
+  border-radius: 0.85rem;
   color: var(--foreground);
-  background: transparent;
-  text-align: left;
+  background: color-mix(in srgb, var(--background) 48%, var(--surface-solid));
   cursor: pointer;
-  transition: background 140ms ease, transform 140ms ease;
+  transition: border-color 140ms ease, background 140ms ease, transform 140ms ease;
 }
 
-.grade-row:hover {
-  background: color-mix(in srgb, var(--background) 74%, transparent);
+.grade-tile:hover {
+  border-color: color-mix(in srgb, var(--subject-color) 45%, var(--border));
+  background: var(--subject-soft);
 }
 
-.grade-row:active {
-  transform: scale(0.985);
+.grade-tile:active {
+  transform: scale(0.96);
 }
 
-.grade-row > svg {
-  color: var(--muted);
-  opacity: 0.58;
+.grade-tile > span {
+  width: 100%;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.63rem;
+  font-weight: 680;
 }
 
 .grade-value {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2rem;
+  height: 2rem;
   display: grid;
   place-items: center;
-  border-radius: 0.72rem;
+  border-radius: 0.65rem;
   color: white;
   background: #738198;
+  font-size: 0.9rem;
   font-weight: 800;
 }
 
@@ -992,26 +939,44 @@ a {
 .grade-3,
 .grade-4 { background: #c95467; }
 
-.grade-details {
-  min-width: 0;
-  display: grid;
-  gap: 0.15rem;
-}
-
-.grade-details strong {
-  overflow: hidden;
-  font-size: 0.79rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.grade-details small {
+.grade-tile small {
   color: var(--muted);
-  font-size: 0.68rem;
+  font-size: 0.6rem;
+}
+
+.grade-expand {
+  width: 100%;
+  min-height: 2.75rem;
+  margin-top: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  border: 0;
+  border-radius: 0.75rem;
+  color: var(--muted);
+  background: transparent;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.grade-expand:hover {
+  color: var(--accent-deep);
+  background: color-mix(in srgb, var(--background) 70%, transparent);
+}
+
+.grade-expand svg {
+  transition: transform 160ms ease;
+}
+
+.grade-expand svg.is-open {
+  transform: rotate(180deg);
 }
 
 .subject-empty {
   width: 100%;
+  margin-top: 1rem;
   min-height: 3.6rem;
   padding: 0.6rem;
   display: flex;
@@ -1216,10 +1181,6 @@ a {
   transform: translateY(-2px);
 }
 
-.semester-picker {
-  grid-template-columns: 1fr 1fr;
-}
-
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1259,6 +1220,61 @@ a {
   width: 100%;
   min-height: 3.35rem;
   margin-top: 0.25rem;
+}
+
+.sheet-action-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+}
+
+.sheet-action-row.has-delete {
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+}
+
+.delete-grade-button {
+  min-height: 3.35rem;
+  margin-top: 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 24%, var(--border));
+  border-radius: 0.9rem;
+  color: var(--danger);
+  background: var(--danger-soft);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delete-grade-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.grade-delete-confirm {
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border));
+  border-radius: 1rem;
+  background: var(--danger-soft);
+}
+
+.grade-delete-confirm > div:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.grade-delete-confirm span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.grade-delete-confirm > div:last-child {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .delete-sheet {
@@ -1531,15 +1547,6 @@ a {
 @media (max-width: 380px) {
   .average-overview {
     grid-template-columns: 1fr;
-  }
-
-  .period-switch {
-    width: 100%;
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .period-switch button {
-    min-height: 2.75rem;
   }
 
   .delete-actions {

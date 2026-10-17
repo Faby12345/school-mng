@@ -5,6 +5,7 @@ import {
   BookOpen,
   BookPlus,
   Check,
+  ChevronDown,
   ChevronRight,
   Code2,
   Dna,
@@ -14,7 +15,6 @@ import {
   Landmark,
   Languages,
   MessageCircle,
-  Pencil,
   Plus,
   Sigma,
   Sparkles,
@@ -29,22 +29,13 @@ import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import type { Grade, Subject } from "@/features/catalog/types";
 import {
   calculateGeneralAverage,
-  calculateSubjectAverages,
+  calculateSubjectAverage,
   formatAverage,
-  type AverageSummary,
 } from "@/features/grades/calculations";
-import { addDefaultSubjects, createSubject, deleteSubject, saveGrade } from "@/server/actions/catalog";
-
-type Period = keyof AverageSummary;
+import { addDefaultSubjects, createSubject, deleteGrade, deleteSubject, saveGrade } from "@/server/actions/catalog";
 
 type SubjectView = Subject & {
-  averages: AverageSummary;
-};
-
-const periodLabels: Record<Period, string> = {
-  semester1: "Semestrul 1",
-  semester2: "Semestrul 2",
-  year: "Tot anul",
+  average: number | null;
 };
 
 const subjectIcons = {
@@ -86,7 +77,6 @@ function averageTone(value: number | null) {
 
 export function CatalogClient({ subjects }: { subjects: Subject[] }) {
   const router = useRouter();
-  const [period, setPeriod] = useState<Period>("year");
   const [gradeEditor, setGradeEditor] = useState<{ subjectId: string; grade?: Grade } | null>(null);
   const [showSubjectEditor, setShowSubjectEditor] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<SubjectView | null>(null);
@@ -94,11 +84,11 @@ export function CatalogClient({ subjects }: { subjects: Subject[] }) {
   const [isPending, startTransition] = useTransition();
 
   const subjectViews = useMemo<SubjectView[]>(
-    () => subjects.map((subject) => ({ ...subject, averages: calculateSubjectAverages(subject.grades) })),
+    () => subjects.map((subject) => ({ ...subject, average: calculateSubjectAverage(subject.grades) })),
     [subjects],
   );
 
-  const generalAverage = calculateGeneralAverage(subjectViews, period);
+  const generalAverage = calculateGeneralAverage(subjectViews);
   const totalGrades = subjects.reduce((sum, subject) => sum + subject.grades.length, 0);
 
   useEffect(() => {
@@ -173,24 +163,12 @@ export function CatalogClient({ subjects }: { subjects: Subject[] }) {
               </span>
               <div>
                 <p>Media generală</p>
-                <strong>{periodLabels[period]}</strong>
+                <strong>Anul școlar</strong>
               </div>
             </div>
             <div className="overview-meta">
               <span><strong>{subjects.length}</strong> materii</span>
               <span><strong>{totalGrades}</strong> note</span>
-            </div>
-            <div className="period-switch" role="group" aria-label="Perioada mediei">
-              {(Object.keys(periodLabels) as Period[]).map((key) => (
-                <button
-                  type="button"
-                  key={key}
-                  className={period === key ? "is-selected" : ""}
-                  onClick={() => setPeriod(key)}
-                >
-                  {key === "semester1" ? "S1" : key === "semester2" ? "S2" : "An"}
-                </button>
-              ))}
             </div>
           </section>
 
@@ -209,7 +187,6 @@ export function CatalogClient({ subjects }: { subjects: Subject[] }) {
               <SubjectCard
                 key={subject.id}
                 subject={subject}
-                period={period}
                 delay={index * 45}
                 onAdd={() => setGradeEditor({ subjectId: subject.id })}
                 onEdit={(grade) => setGradeEditor({ subjectId: subject.id, grade })}
@@ -254,24 +231,22 @@ export function CatalogClient({ subjects }: { subjects: Subject[] }) {
 
 function SubjectCard({
   subject,
-  period,
   delay,
   onAdd,
   onEdit,
   onDelete,
 }: {
   subject: SubjectView;
-  period: Period;
   delay: number;
   onAdd: () => void;
   onEdit: (grade: Grade) => void;
   onDelete: () => void;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const Icon = subjectIcons[subject.icon as keyof typeof subjectIcons] ?? BookOpen;
-  const visibleGrades = subject.grades
-    .filter((grade) => period === "year" || grade.semester === (period === "semester1" ? 1 : 2))
-    .sort((a, b) => b.graded_on.localeCompare(a.graded_on));
-  const activeAverage = subject.averages[period];
+  const sortedGrades = [...subject.grades].sort((a, b) => b.graded_on.localeCompare(a.graded_on));
+  const visibleGrades = expanded ? sortedGrades : sortedGrades.slice(0, 8);
+  const hiddenGradeCount = sortedGrades.length - visibleGrades.length;
 
   return (
     <article className={`subject-card subject-${subject.color_token}`} style={{ animationDelay: `${delay}ms` }}>
@@ -291,31 +266,37 @@ function SubjectCard({
           <h3>{subject.name}</h3>
           <p>{subject.grades.length === 1 ? "1 notă" : `${subject.grades.length} note`} în total</p>
         </div>
-        <span className={`subject-average tone-${averageTone(activeAverage)}`}>{formatAverage(activeAverage)}</span>
+        <span className={`subject-average tone-${averageTone(subject.average)}`}>{formatAverage(subject.average)}</span>
       </div>
 
-      <dl className="average-strip">
-        <div><dt>S1</dt><dd>{formatAverage(subject.averages.semester1)}</dd></div>
-        <div><dt>S2</dt><dd>{formatAverage(subject.averages.semester2)}</dd></div>
-        <div><dt>An</dt><dd>{formatAverage(subject.averages.year)}</dd></div>
-      </dl>
-
       {visibleGrades.length ? (
-        <div className="grade-list">
-          {visibleGrades.map((grade) => (
-            <button key={grade.id} type="button" className="grade-row" onClick={() => onEdit(grade)}>
-              <span className={`grade-value grade-${grade.value}`}>{grade.value}</span>
-              <span className="grade-details">
-                <strong>{grade.assessment_type}</strong>
-                <small>{formatDate(grade.graded_on)} · S{grade.semester}</small>
-              </span>
-              <Pencil size={15} aria-hidden="true" />
+        <div className="grade-collection">
+          <div className="grade-grid">
+            {visibleGrades.map((grade) => (
+              <button
+                key={grade.id}
+                type="button"
+                className="grade-tile"
+                onClick={() => onEdit(grade)}
+                aria-label={`Editează nota ${grade.value}, ${grade.assessment_type}, ${formatDate(grade.graded_on)}`}
+                title={`${grade.assessment_type} · ${formatDate(grade.graded_on)}`}
+              >
+                <strong className={`grade-value grade-${grade.value}`}>{grade.value}</strong>
+                <span>{grade.assessment_type}</span>
+                <small>{formatDate(grade.graded_on)}</small>
+              </button>
+            ))}
+          </div>
+          {sortedGrades.length > 8 ? (
+            <button className="grade-expand" type="button" onClick={() => setExpanded((current) => !current)}>
+              <ChevronDown size={15} className={expanded ? "is-open" : ""} />
+              {expanded ? "Arată mai puține" : `Încă ${hiddenGradeCount} ${hiddenGradeCount === 1 ? "notă" : "note"}`}
             </button>
-          ))}
+          ) : null}
         </div>
       ) : (
         <button className="subject-empty" type="button" onClick={onAdd}>
-          <Plus size={16} /> Nicio notă în {periodLabels[period].toLocaleLowerCase("ro")}
+          <Plus size={16} /> Nicio notă în acest an
         </button>
       )}
     </article>
@@ -389,24 +370,25 @@ function GradeEditor({
   onSuccess: (message: string) => void;
 }) {
   const [value, setValue] = useState(grade?.value ?? 10);
-  const [semester, setSemester] = useState<1 | 2>(grade?.semester ?? 1);
   const [error, setError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [pendingAction, setPendingAction] = useState<"save" | "delete" | null>(null);
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape" && !pending) onClose();
     }
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [onClose]);
+  }, [onClose, pending]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    setPendingAction("save");
     const formData = new FormData(event.currentTarget);
     formData.set("value", String(value));
-    formData.set("semester", String(semester));
 
     startTransition(async () => {
       const result = await saveGrade(formData);
@@ -415,8 +397,19 @@ function GradeEditor({
     });
   }
 
+  function removeGrade() {
+    if (!grade) return;
+    setError(null);
+    setPendingAction("delete");
+    startTransition(async () => {
+      const result = await deleteGrade(grade.id);
+      if (result.ok) onSuccess(result.message);
+      else setError(result.message);
+    });
+  }
+
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+    <div className="modal-backdrop" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !pending && onClose()}>
       <section className="sheet" role="dialog" aria-modal="true" aria-labelledby="grade-editor-title">
         <div className="sheet-handle" aria-hidden="true" />
         <header className="sheet-header">
@@ -424,7 +417,7 @@ function GradeEditor({
             <p className="eyebrow">{grade ? "Modificare" : "Notă nouă"}</p>
             <h2 id="grade-editor-title">{grade ? "Editează nota" : "Adaugă o notă"}</h2>
           </div>
-          <button className="sheet-close" type="button" onClick={onClose} aria-label="Închide"><X size={20} /></button>
+          <button className="sheet-close" type="button" onClick={onClose} aria-label="Închide" disabled={pending}><X size={20} /></button>
         </header>
 
         <form className="sheet-form" onSubmit={submit}>
@@ -454,14 +447,6 @@ function GradeEditor({
             </div>
           </fieldset>
 
-          <fieldset className="form-fieldset">
-            <legend>Semestrul</legend>
-            <div className="semester-picker">
-              <button type="button" className={semester === 1 ? "is-selected" : ""} onClick={() => setSemester(1)}>Semestrul 1</button>
-              <button type="button" className={semester === 2 ? "is-selected" : ""} onClick={() => setSemester(2)}>Semestrul 2</button>
-            </div>
-          </fieldset>
-
           <div className="form-row">
             <label className="field-group">
               <span>Tip evaluare</span>
@@ -481,9 +466,31 @@ function GradeEditor({
           </label>
 
           {error ? <p className="form-alert form-alert-error" role="alert">{error}</p> : null}
-          <button className="primary-action sheet-submit" type="submit" disabled={pending}>
-            {pending ? "Se salvează…" : grade ? "Salvează modificările" : "Adaugă nota"}
-          </button>
+          {grade && confirmingDelete ? (
+            <div className="grade-delete-confirm" role="alert">
+              <div>
+                <strong>Ștergi nota {grade.value}?</strong>
+                <span>Această acțiune nu poate fi anulată.</span>
+              </div>
+              <div>
+                <button className="text-button" type="button" onClick={() => setConfirmingDelete(false)} disabled={pending}>Păstrează</button>
+                <button className="danger-button" type="button" onClick={removeGrade} disabled={pending}>
+                  <Trash2 size={17} /> {pending && pendingAction === "delete" ? "Se șterge…" : "Șterge"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className={`sheet-action-row${grade ? " has-delete" : ""}`}>
+              {grade ? (
+                <button className="delete-grade-button" type="button" onClick={() => setConfirmingDelete(true)} disabled={pending}>
+                  <Trash2 size={17} /> Șterge nota
+                </button>
+              ) : null}
+              <button className="primary-action sheet-submit" type="submit" disabled={pending}>
+                {pending && pendingAction === "save" ? "Se salvează…" : grade ? "Salvează" : "Adaugă nota"}
+              </button>
+            </div>
+          )}
         </form>
       </section>
     </div>

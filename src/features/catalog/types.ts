@@ -4,7 +4,6 @@ export type Grade = {
   assessment_type: string;
   graded_on: string;
   note: string | null;
-  semester: 1 | 2;
   created_at: string;
 };
 
