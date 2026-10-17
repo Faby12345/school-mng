@@ -10,6 +10,16 @@ export const metadata: Metadata = {
   },
   description: "Teme, note și învățare într-un singur loc.",
   applicationName: "Școala Mea",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: "/icons/icon-512.png",
+    apple: "/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Școala Mea",
+  },
 };
 
 export const viewport: Viewport = {
