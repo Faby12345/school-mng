@@ -8,6 +8,7 @@ import { useState } from "react";
 const items = [
   { href: "/", label: "Acasă", icon: House },
   { href: "/catalog", label: "Catalog", icon: GraduationCap },
+  { href: "/study", label: "Învață", icon: BookOpenText },
 ] as const;
 
 export function AppNavigation() {
@@ -36,10 +37,6 @@ export function AppNavigation() {
             </Link>
           );
         })}
-        <span className="nav-item is-disabled" aria-disabled="true" title="Disponibil în curând">
-          <BookOpenText size={21} />
-          <span>Învață</span>
-        </span>
         <span className="nav-item is-disabled" aria-disabled="true" title="Disponibil în curând">
           <CalendarCheck2 size={21} />
           <span>Teme</span>

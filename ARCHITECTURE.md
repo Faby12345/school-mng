@@ -175,6 +175,8 @@ title             text not null
 notes             text not null default ''
 ```
 
+În interfață, un `lesson` este prezentat ca un capitol sau subiect de studiu. Această denumire păstrează schema existentă, dar permite fluxul Materie → Capitol → Notițe fără un tabel redundant.
+
 ### `flashcards`
 
 ```text
@@ -186,6 +188,8 @@ next_review_at    timestamptz not null default now()
 interval_days     integer not null default 0
 ease_score        numeric not null default 2.0
 ```
+
+Pentru cardurile manuale de notițe, `question` este titlul sau ideea-cheie, iar `answer` este conținutul notiței. Relația are `on delete cascade`, astfel încât ștergerea unui capitol elimină în siguranță toate cardurile sale.
 
 ### `study_reviews`
 

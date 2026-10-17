@@ -60,9 +60,10 @@ Catalogul este personal și orientativ. Nu reprezintă catalogul oficial al șco
 
 ### Învață
 
-- lecții grupate după materie;
-- editor simplu pentru titlu și notițe;
-- flashcarduri create manual;
+- spațiu de lucru separat pentru fiecare materie;
+- capitole grupate în fiecare materie (de exemplu Funcții sau Derivate);
+- notițe tip flashcard create, editate și șterse în fiecare capitol;
+- navigare Materie → Capitol → Notițe, optimizată pentru telefon;
 - generarea unor întrebări din notițe;
 - verificarea, editarea și eliminarea propunerilor înainte de salvare;
 - sesiune de studiu cu răspuns ascuns;
