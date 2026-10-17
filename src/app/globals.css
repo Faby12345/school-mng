@@ -516,13 +516,17 @@ a {
   left: 50%;
   bottom: max(0.75rem, env(safe-area-inset-bottom));
   width: min(calc(100% - 1.5rem), 31rem);
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
   padding: 0.38rem;
   border: 1px solid var(--border);
   border-radius: 1.45rem;
   background: color-mix(in srgb, var(--surface-solid) 82%, transparent);
   box-shadow: 0 18px 50px rgba(20, 38, 67, 0.2);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
   backdrop-filter: blur(22px) saturate(1.35);
+  isolation: isolate;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .nav-inner {
@@ -532,6 +536,8 @@ a {
 }
 
 .nav-item {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   min-height: 3.65rem;
   display: flex;
@@ -544,6 +550,9 @@ a {
   font-size: 0.67rem;
   font-weight: 650;
   text-decoration: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+  user-select: none;
   transition: color 160ms ease, background 160ms ease, transform 160ms ease;
 }
 
@@ -556,8 +565,18 @@ a {
   transform: scale(0.96);
 }
 
+.nav-item.is-navigating {
+  color: var(--accent-deep);
+  background: color-mix(in srgb, var(--accent-soft) 70%, transparent);
+}
+
+.nav-item.is-navigating svg {
+  animation: nav-pulse 700ms ease-in-out infinite alternate;
+}
+
 .nav-item.is-disabled {
   opacity: 0.48;
+  pointer-events: none;
 }
 
 /* Catalog */
@@ -1385,6 +1404,11 @@ a {
 
 @keyframes shimmer {
   to { background-position: -220% 0; }
+}
+
+@keyframes nav-pulse {
+  from { transform: scale(0.92); opacity: 0.7; }
+  to { transform: scale(1.06); opacity: 1; }
 }
 
 @media (min-width: 720px) {
